@@ -30,7 +30,7 @@ def prescrape(input_archive: zipfile.ZipFile) -> list[dict]:
         The input archive containing modlist.html and manifest.json files.
 
     Returns:
-        dict: A dictionary containing formatted data extracted from the files.
+        list[dict]: A dictionary containing formatted data extracted from the files.
             Each entry in the dictionary represents a mod 
             and includes the following information:
             - name: The name of the mod.
