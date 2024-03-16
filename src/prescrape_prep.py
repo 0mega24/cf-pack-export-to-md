@@ -21,7 +21,7 @@ import re
 import zipfile
 
 
-def prescrape(input_archive: zipfile.ZipFile) -> dict:
+def prescrape(input_archive: zipfile.ZipFile) -> list[dict]:
     """
     Extracts information from modlist.html and manifest.json files in the input archive.
 
@@ -54,7 +54,8 @@ def prescrape(input_archive: zipfile.ZipFile) -> dict:
             (file["projectID"], file["fileID"], file["required"])
             for file in manifest["files"]
         ]
-        formatted_data = {}
+
+    formatted_data = []
 
     for count, line in enumerate(lines):
         line = line.decode("utf-8")
@@ -66,13 +67,15 @@ def prescrape(input_archive: zipfile.ZipFile) -> dict:
         file_id = file_triplets[count][1]
         required = file_triplets[count][2]
         download_link = f"{link}/files/{file_id}"
-        formatted_data[count] = {
+        formatted_data.append(
+            {
+            "projectID": project_id,
             "name": name,
             "author": author,
             "link": link,
-            "downloadlink": download_link,
-            "projectID": project_id,
             "fileID": file_id,
-            "required": required,
-        }
+            "downloadlink": download_link,
+            "required": required
+            }
+        )
     return formatted_data
