@@ -26,19 +26,19 @@ def prescrape(input_archive: zipfile.ZipFile) -> list[dict]:
     Extracts information from modlist.html and manifest.json files in the input archive.
 
     Args:
-        input_archive (zipfile.ZipFile): 
-        The input archive containing modlist.html and manifest.json files.
+        input_archive (zipfile.ZipFile): The input archive containing modlist.html 
+        and manifest.json files.
 
     Returns:
         list[dict]: A dictionary containing formatted data extracted from the files.
             Each entry in the dictionary represents a mod 
             and includes the following information:
+            - projectID: The project ID of the mod.
             - name: The name of the mod.
             - author: The author of the mod.
             - link: The link to the mod.
-            - downloadlink: The download link for the mod.
-            - projectID: The project ID of the mod.
             - fileID: The file ID of the mod.
+            - downloadlink: The download link for the mod.
             - required: Whether the mod is required or not.
     """
     pattern = re.compile(r'<a href="(.*?)">(.*?) \(by (.*?)\)</a>')
