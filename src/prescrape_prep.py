@@ -1,11 +1,11 @@
 """
-This module contains a function for extracting information from 
+This module contains a function for extracting information from
 modlist.html and manifest.json files in an input archive.
 
-The function `prescrape` takes an input archive as a parameter and returns 
+The function `prescrape` takes an input archive as a parameter and returns
 a dictionary containing formatted data extracted from the files.
 
-The dictionary contains information about each mod, including its 
+The dictionary contains information about each mod, including its
 name, author, link, download link, project ID, file ID, and whether it is required or not.
 
 Example usage:
@@ -26,12 +26,12 @@ def prescrape(input_archive: zipfile.ZipFile) -> list[dict]:
     Extracts information from modlist.html and manifest.json files in the input archive.
 
     Args:
-        input_archive (zipfile.ZipFile): The input archive containing modlist.html 
+        input_archive (zipfile.ZipFile): The input archive containing modlist.html
         and manifest.json files.
 
     Returns:
         list[dict]: A dictionary containing formatted data extracted from the files.
-            Each entry in the dictionary represents a mod 
+            Each entry in the dictionary represents a mod
             and includes the following information:
             - projectID: The project ID of the mod.
             - name: The name of the mod.
@@ -47,35 +47,22 @@ def prescrape(input_archive: zipfile.ZipFile) -> list[dict]:
         lines = modlist.readlines()
     lines = lines[1:-1]
 
-    file_triplets = []
+    file_data_pairs = []
     with input_archive.open("manifest.json") as manifest:
         manifest = json.load(manifest)
-        file_triplets = [
-            (file["projectID"], file["fileID"], file["required"])
-            for file in manifest["files"]
+        file_data_pairs = [
+            (file["projectID"], file["fileID"]) for file in manifest["files"]
         ]
 
-    formatted_data = []
+    formatted_data = {}
 
     for count, line in enumerate(lines):
         line = line.decode("utf-8")
         match = pattern.search(line)
         link = match.group(1)
-        name = match.group(2)
-        author = match.group(3)
-        project_id = file_triplets[count][0]
-        file_id = file_triplets[count][1]
-        required = file_triplets[count][2]
+        project_id = file_data_pairs[count][0]
+        file_id = file_data_pairs[count][1]
         download_link = f"{link}/files/{file_id}"
-        formatted_data.append(
-            {
-            "projectID": project_id,
-            "name": name,
-            "author": author,
-            "link": link,
-            "fileID": file_id,
-            "downloadlink": download_link,
-            "required": required
-            }
-        )
+        formatted_data[project_id] = [link, file_id, download_link]
+
     return formatted_data
