@@ -6,10 +6,12 @@ if it has the correct structure for a CF export.
 import json
 import os
 import re
+from time import sleep
 import zipfile
 from tkinter import filedialog
 
-from webdriver_actions import build_driver
+from imgur import is_valid_image_url, upload_image
+from webdriver_actions import build_driver, get_details
 from zip_archive_verification import has_cf_export_structure
 
 # ------------- #
@@ -73,21 +75,69 @@ else:
 pattern = re.compile(r'<a href="(.*?)">(.*?) \(by (.*?)\)</a>')
 for count, line in enumerate(lines):
     match = pattern.search(line.decode("utf-8"))
+    
     link = match.group(1)
     name = match.group(2)
     author = match.group(3)
     project_id = file_triplets[count][0]
     file_id = file_triplets[count][1]
     download_link = f"{link}/files/{file_id}"
-    
-    
 
-    if project_id not in data:
-        pass  # TODO: scrape the project_link and download_link
+    missing_project = str(project_id) not in data.keys()
+    if not missing_project:
+        missing_file = str(file_id) not in data[str(project_id)]["versions"].keys()
     else:
-        if file_id not in data[project_id]["versions"]:
-            pass  # TODO: scrape just the download_link
+        missing_file = False
 
-    # data[project_id] = {}  # TODO: build dict structure to pass into json.dump
+    if missing_project or missing_project:
+        print(count, download_link)
+        driver.get(download_link)
+        page = driver.page_source
+        project_details = get_details(page)
+        if not project_details:
+            print("Dead Link:", download_link)
+            link = "N/A"
+            download_link = "N/A"
+            project_details = ["N/A", 0, "N/A", "N/A", "N/A", "N/A", "N/A"]
 
+        description = project_details[0]
+        total_downloads = project_details[1]
+        img_src = project_details[2]
+        file_name = project_details[3]
+        game_version = project_details[4]
+        license_link = project_details[5]
+        license = project_details[6]
+
+        if missing_project:
+            if is_valid_image_url(img_src):
+                # img_src = upload_image(img_src)
+                # time.sleep(5)
+                pass
+            data[project_id] = {
+                "name": name,
+                "author": author,
+                "description": description,
+                "total_downloads": total_downloads,
+                "license": license,
+                "license_link": link+license_link,
+                "project_link": link,
+                "img_src": img_src,
+                "versions": {
+                    file_id: {
+                        "download_link": download_link,
+                        "file_name": file_name,
+                        "game_version": game_version
+                    }
+                }
+            }
+        elif missing_file:
+            data[project_id]["versions"][file_id] = {
+                "download_link": download_link,
+                "file_name": file_name,
+                "game_version": game_version
+            }
+
+with open(data_path, "w") as file:
+    json.dump(data, file, indent=4)
+        
 # ------------- #
