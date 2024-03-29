@@ -1,16 +1,11 @@
-"""
-This script allows the user to select a zip file and checks
-if it has the correct structure for a CF export.
-"""
-
 import json
 import os
 import re
-from time import sleep
+import time
 import zipfile
 from tkinter import filedialog
 
-from imgur import is_valid_image_url, upload_image
+from imgur import is_valid_image_url
 from webdriver_actions import build_driver, get_details
 from zip_archive_verification import has_cf_export_structure
 
@@ -20,7 +15,6 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(current_dir, "..", "data")
 data_path = os.path.join(data_dir, "data.json")
 aux_img_data_path = os.path.join(data_dir, "aux_img_data.json")
-
 
 home_dir = os.path.expanduser("~")
 
@@ -84,7 +78,7 @@ else:
         json.dump(aux_img_data, file)
 
 # ------------- #
-
+time_date_format = "%Y-%m-%d"
 pattern = re.compile(r'<a href="(.*?)">(.*?) \(by (.*?)\)</a>')
 for count, line in enumerate(lines):
     match = pattern.search(line.decode("utf-8"))
@@ -93,7 +87,7 @@ for count, line in enumerate(lines):
     name = match.group(2)
     author = match.group(3)
     project_id = str(file_triplets[count][0])
-    file_id = file_triplets[count][1]
+    file_id = str(file_triplets[count][1])
     download_link = f"{link}/files/{file_id}"
 
     missing_project = project_id not in data.keys()
@@ -101,23 +95,24 @@ for count, line in enumerate(lines):
         missing_file = file_id not in data[project_id]["versions"].keys()
     else:
         missing_file = False
-        
-    if (missing_project or missing_file):
+
+    if missing_project or missing_file:
         print(count, download_link)
         driver.get(download_link)
         page = driver.page_source
         project_details = get_details(page)
         if not project_details:
             print("Dead Link:", download_link)
-            project_details = ["N/A", 0, "N/A", "N/A", "N/A", "N/A", "N/A"]
+            link = ""
+            download_link = ""
+            project_details = ["", "", "", "", "", "", ""]
 
         description = project_details[0]
         total_downloads = project_details[1]
         img_src = project_details[2]
         file_name = project_details[3]
         game_version = project_details[4]
-        license_link = project_details[5]
-        license = project_details[6]
+        license = project_details[5]
 
         if missing_project:
             if is_valid_image_url(img_src):
@@ -128,9 +123,10 @@ for count, line in enumerate(lines):
                 "description": description,
                 "total_downloads": total_downloads,
                 "license": license,
-                "license_link": link + license_link,
                 "project_link": link,
-                "img_src": "not_done",
+                "img_src": img_src,
+                "imgur_link": "",
+                "last_updated": time.strftime(time_date_format),
                 "versions": {
                     file_id: {
                         "download_link": download_link,
@@ -140,19 +136,18 @@ for count, line in enumerate(lines):
                 },
             }
         elif missing_file:
-            print("Missing File:", download_link)
+            data[project_id]["last_updated"] = time.strftime(time_date_format)
             data[project_id]["versions"][file_id] = {
                 "download_link": download_link,
                 "file_name": file_name,
                 "game_version": game_version,
             }
 
-# ------------- #
+    if count % 10 == 0 or count == len(lines) - 1:
+        with open(data_path, "w") as file:
+            json.dump(data, file, indent=4)
 
-with open(data_path, "w") as file:
-    json.dump(data, file, indent=4)
-
-with open(aux_img_data_path, "w") as file:
-    json.dump(aux_img_data, file, indent=4)
+        with open(aux_img_data_path, "w") as file:
+            json.dump(aux_img_data, file, indent=4)
 
 # ------------- #

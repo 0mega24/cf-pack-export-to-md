@@ -1,15 +1,3 @@
-"""
-This module provides a function to build a Chrome webdriver instance with specific options.
-
-It uses the Selenium library and the selenium_stealth package to create a headless Chrome webdriver
-with various options to enhance stealth and performance.
-
-Example usage:
-    driver = build_driver()
-    driver.get("https://www.example.com")
-
-"""
-
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium_stealth import stealth
@@ -73,10 +61,9 @@ def get_details(page):
             file_card.find("ul", class_="versions-group-items").find("li").text.strip()
         )
 
-        license_link = license_dd.find("a").get("href")
         license = license_dd.text.strip()
 
     except AttributeError:
         return False
 
-    return[description, total_downloads, img_src, file_name, game_version, license_link, license]
+    return[description, total_downloads, img_src, file_name, game_version, license]
