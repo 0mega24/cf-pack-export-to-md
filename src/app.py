@@ -19,6 +19,8 @@ from zip_archive_verification import has_cf_export_structure
 current_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(current_dir, "..", "data")
 data_path = os.path.join(data_dir, "data.json")
+aux_img_data_path = os.path.join(data_dir, "aux_img_data.json")
+
 
 home_dir = os.path.expanduser("~")
 
@@ -70,34 +72,43 @@ else:
     with open(data_path, "w") as file:
         json.dump(data, file)
 
+if os.path.exists(aux_img_data_path):
+    with open(aux_img_data_path, "r") as file:
+        if os.path.getsize(aux_img_data_path) == 0:
+            aux_img_data = {}
+        else:
+            aux_img_data = json.load(file)
+else:
+    aux_img_data = {}
+    with open(aux_img_data_path, "w") as file:
+        json.dump(aux_img_data, file)
+
 # ------------- #
 
 pattern = re.compile(r'<a href="(.*?)">(.*?) \(by (.*?)\)</a>')
 for count, line in enumerate(lines):
     match = pattern.search(line.decode("utf-8"))
-    
+
     link = match.group(1)
     name = match.group(2)
     author = match.group(3)
-    project_id = file_triplets[count][0]
+    project_id = str(file_triplets[count][0])
     file_id = file_triplets[count][1]
     download_link = f"{link}/files/{file_id}"
 
-    missing_project = str(project_id) not in data.keys()
+    missing_project = project_id not in data.keys()
     if not missing_project:
-        missing_file = str(file_id) not in data[str(project_id)]["versions"].keys()
+        missing_file = file_id not in data[project_id]["versions"].keys()
     else:
         missing_file = False
-
-    if missing_project or missing_project:
+        
+    if (missing_project or missing_file):
         print(count, download_link)
         driver.get(download_link)
         page = driver.page_source
         project_details = get_details(page)
         if not project_details:
             print("Dead Link:", download_link)
-            link = "N/A"
-            download_link = "N/A"
             project_details = ["N/A", 0, "N/A", "N/A", "N/A", "N/A", "N/A"]
 
         description = project_details[0]
@@ -110,34 +121,38 @@ for count, line in enumerate(lines):
 
         if missing_project:
             if is_valid_image_url(img_src):
-                # img_src = upload_image(img_src)
-                # time.sleep(5)
-                pass
+                aux_img_data[project_id] = img_src
             data[project_id] = {
                 "name": name,
                 "author": author,
                 "description": description,
                 "total_downloads": total_downloads,
                 "license": license,
-                "license_link": link+license_link,
+                "license_link": link + license_link,
                 "project_link": link,
-                "img_src": img_src,
+                "img_src": "not_done",
                 "versions": {
                     file_id: {
                         "download_link": download_link,
                         "file_name": file_name,
-                        "game_version": game_version
+                        "game_version": game_version,
                     }
-                }
+                },
             }
         elif missing_file:
+            print("Missing File:", download_link)
             data[project_id]["versions"][file_id] = {
                 "download_link": download_link,
                 "file_name": file_name,
-                "game_version": game_version
+                "game_version": game_version,
             }
+
+# ------------- #
 
 with open(data_path, "w") as file:
     json.dump(data, file, indent=4)
-        
+
+with open(aux_img_data_path, "w") as file:
+    json.dump(aux_img_data, file, indent=4)
+
 # ------------- #
