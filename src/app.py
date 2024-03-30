@@ -1,3 +1,19 @@
+"""
+This script processes a CurseForge (CF) modpack export, extracts information about 
+each project and file and storing it in a JSON file. 
+It utilizes Selenium for web scraping and Tkinter for file dialog.
+
+Usage:
+    python app.py [--log <log_level>]
+
+Arguments:
+    --log: Minimum logging level to display (default: WARNING). 
+    Choices: DEBUG, INFO, WARNING, ERROR, CRITICAL.
+
+Author:
+    0mega24
+"""
+
 import os
 import re
 import json
@@ -16,6 +32,16 @@ from zip_archive_verification import has_cf_export_structure
 # ------------- #
 
 def load_or_create_data(file_path: str, default_dict: Dict) -> Dict:
+    """
+    Load data from a JSON file if it exists, otherwise create and initialize with a default dictionary.
+
+    Args:
+        file_path (str): Path to the JSON file.
+        default_dict (Dict): Default dictionary to initialize with if the file doesn't exist.
+
+    Returns:
+        Dict: Loaded or newly created dictionary.
+    """
     if os.path.exists(file_path):
         with open(file_path, "r") as file:
             if os.path.getsize(file_path) == 0:
