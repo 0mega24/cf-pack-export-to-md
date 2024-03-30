@@ -1,14 +1,49 @@
-import json
 import os
 import re
+import json
 import time
+import logging
 import zipfile
-from typing import List, Tuple, Dict
+import argparse
+from tqdm import tqdm
 from tkinter import filedialog
+from typing import List, Tuple, Dict
 
 from imgur import is_valid_image_url
 from webdriver_actions import build_driver, get_details
 from zip_archive_verification import has_cf_export_structure
+
+# ------------- #
+
+def load_or_create_data(file_path: str, default_dict: Dict) -> Dict:
+    if os.path.exists(file_path):
+        with open(file_path, "r") as file:
+            if os.path.getsize(file_path) == 0:
+                data = default_dict
+            else:
+                data = json.load(file)
+    else:
+        data = default_dict
+        with open(file_path, "w") as file:
+            json.dump(data, file)
+    return data
+
+# ------------- #
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--log",
+    default="WARNING",
+    choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+    help="Minimum logging level to display (default: INFO)",
+)
+args = parser.parse_args()
+
+# ------------- #
+
+logging.basicConfig(
+    level=args.log, filename="logfile.log", format="%(levelname)s: %(message)s"
+)
 
 # ------------- #
 
@@ -19,13 +54,17 @@ aux_img_data_path: str = os.path.join(data_dir, "aux_img_data.json")
 
 home_dir: str = os.path.expanduser("~")
 
+# ------------- #
+
 file_path: str = filedialog.askopenfilename(
     initialdir=home_dir, filetypes=[("Zip Files", "*.zip")]
 )
 
 archive: zipfile.ZipFile = zipfile.ZipFile(file_path)
 if not has_cf_export_structure(archive):
-    print("The selected archive does not have the correct structure for a CF export.")
+    logging.fatal(
+        "The selected archive does not have the correct structure for a CF export."
+    )
     exit()
 
 # ------------- #
@@ -44,11 +83,15 @@ with archive.open("manifest.json") as manifest:
     ]
 
 if len(lines) != len(file_triplets):
-    print(len(lines), len(file_triplets))
-    print(
+    logging.fatal(
         "The number of files in the manifest does not match the number of files in the modlist."
     )
     exit()
+
+# ------------- #
+
+data: Dict = load_or_create_data(data_path, {})
+aux_img_data: Dict = load_or_create_data(aux_img_data_path, {})
 
 # ------------- #
 
@@ -56,32 +99,9 @@ driver = build_driver()
 
 # ------------- #
 
-if os.path.exists(data_path):
-    with open(data_path, "r") as file:
-        if os.path.getsize(data_path) == 0:
-            data: Dict = {}
-        else:
-            data = json.load(file)
-else:
-    data = {}
-    with open(data_path, "w") as file:
-        json.dump(data, file)
-
-if os.path.exists(aux_img_data_path):
-    with open(aux_img_data_path, "r") as file:
-        if os.path.getsize(aux_img_data_path) == 0:
-            aux_img_data: Dict[str, str] = {}
-        else:
-            aux_img_data = json.load(file)
-else:
-    aux_img_data = {}
-    with open(aux_img_data_path, "w") as file:
-        json.dump(aux_img_data, file)
-
-# ------------- #
 time_date_format: str = "%Y-%m-%d"
 pattern: re.Pattern[str] = re.compile(r'<a href="(.*?)">(.*?) \(by (.*?)\)</a>')
-for count, line in enumerate(lines):
+for count, line in enumerate(tqdm(lines, desc="Processing", unit="links")):
     match = pattern.search(line.decode("utf-8"))
 
     link: str = match.group(1)
@@ -98,12 +118,11 @@ for count, line in enumerate(lines):
         missing_file = False
 
     if missing_project or missing_file:
-        print(count, download_link)
         driver.get(download_link)
         page = driver.page_source
         project_details = get_details(page)
         if not project_details:
-            print("Dead Link:", download_link)
+            logging.warning(f"Dead Link: {download_link}")
             link = ""
             download_link = ""
             project_details = ["", "", "", "", "", "", ""]
@@ -116,6 +135,7 @@ for count, line in enumerate(lines):
         license: str = project_details[5]
 
         if missing_project:
+            logging.info(f"Adding New Project: {name}")
             if is_valid_image_url(img_src):
                 aux_img_data[project_id] = img_src
             data[project_id] = {
@@ -137,6 +157,7 @@ for count, line in enumerate(lines):
                 },
             }
         elif missing_file:
+            logging.info(f"Adding File: {file_id}")
             data[project_id]["last_updated"] = time.strftime(time_date_format)
             data[project_id]["versions"][file_id] = {
                 "download_link": download_link,
@@ -145,6 +166,7 @@ for count, line in enumerate(lines):
             }
 
     if count % 10 == 0 or count == len(lines) - 1:
+        logging.debug(f"Saving Data Up To Number: {count}")
         with open(data_path, "w") as file:
             json.dump(data, file, indent=4)
 
