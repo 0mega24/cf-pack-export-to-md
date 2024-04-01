@@ -22,8 +22,8 @@ def is_valid_image_url(url: str) -> bool:
 
 
 def upload_image(image_url: str) -> str:
-    payload: dict = {"image": image_url}
-    headers: dict = {"Authorization": api_key}
+    payload:  dict = {"image": image_url}
+    headers:  dict = {"Authorization": api_key}
     response: requests.Response = requests.request(
         "POST", url, headers=headers, data=payload, files=[]
     )
@@ -31,20 +31,19 @@ def upload_image(image_url: str) -> str:
     return str(response.json().get("data").get("link"))
 
 def main() -> None:
-    current_dir: str = os.path.dirname(os.path.abspath(__file__))
-    data_dir: str = os.path.join(current_dir, "..", "data")
-    data_path: str = os.path.join(data_dir, "data.json")
+    current_dir:       str = os.path.dirname(os.path.abspath(__file__))
+    data_dir:          str = os.path.join(current_dir, "..", "data")
+    data_path:         str = os.path.join(data_dir, "data.json")
     aux_img_data_path: str = os.path.join(data_dir, "aux_img_data.json")
 
     while True:
-        start_time = time.time()
+        start_time                      = time.time()
         data: Dict[str, Dict[str, str]] = load_or_create_data(data_path, {})
-        aux_img_data: Dict[str, str] = load_or_create_data(aux_img_data_path, {})
+        aux_img_data: Dict[str, str]    = load_or_create_data(aux_img_data_path, {})
 
         count = 0
         for key, value in aux_img_data.items():
             if data[key]["imgur_link"] == "":
-                print(f"Uploading image {key}...")
                 imgur_link: str = upload_image(value)
                 data.setdefault(key, {})["imgur_link"] = imgur_link
                 count += 1
@@ -55,7 +54,7 @@ def main() -> None:
         with open(data_path, 'w') as file:
             json.dump(data, file,  indent=4)
 
-        elapsed_time = time.time() - start_time
+        elapsed_time  = time.time() - start_time
         time_to_sleep = max(0, 3600 - elapsed_time)
         time.sleep(time_to_sleep)
 
