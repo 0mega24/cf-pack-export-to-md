@@ -50,11 +50,20 @@ logging.basicConfig(
 # ------------- #
 
 current_dir: str = os.path.dirname(os.path.abspath(__file__))
+export_dir: str = os.path.join(current_dir, "..", "export")
 data_dir: str = os.path.join(current_dir, "..", "data")
+export_path: str = os.path.join(export_dir, "export.md")
 data_path: str = os.path.join(data_dir, "data.json")
 aux_img_data_path: str = os.path.join(data_dir, "aux_img_data.json")
 
 home_dir: str = os.path.expanduser("~")
+
+# ------------- #
+
+if not os.path.exists(export_dir):
+    os.makedirs(export_dir)
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir)
 
 # ------------- #
 
@@ -95,7 +104,7 @@ if len(lines) != len(file_triplets):
 data: Dict = load_or_create_data(data_path, {})
 aux_img_data: Dict = load_or_create_data(aux_img_data_path, {})
 
-formatted_data: List[str] = []
+export_data: List[str] = []
 
 # ------------- #
 
@@ -105,7 +114,7 @@ driver = build_driver()
 
 time_date_format: str = "%Y-%m-%d"
 pattern: re.Pattern[str] = re.compile(r'<a href="(.*?)">(.*?) \(by (.*?)\)</a>')
-for count, line in enumerate(tqdm(lines, desc="Processing", unit="links")):
+for count, line in enumerate(tqdm(lines, desc="Processing", unit="Projects")):
     match = pattern.search(line.decode("utf-8"))
 
     link: str = match.group(1)
@@ -169,6 +178,20 @@ for count, line in enumerate(tqdm(lines, desc="Processing", unit="links")):
                 "game_version": game_version,
             }
 
+    
+    if data[project_id]["imgur_link"]:
+        img_src: str = data[project_id]["imgur_link"]
+    else:
+        img_src: str = data[project_id]["img_src"]
+    file_name: str = data[project_id]["versions"][file_id]["file_name"]
+    license: str = data[project_id]["license"]
+    total_downloads: str = data[project_id]["total_downloads"]
+    description: str = data[project_id]["description"]
+
+    export_data.append(
+        f'''<img src="{img_src}" width=48> | [**{name}**]({link}) <sup>[*{file_name}*]({download_link})</sup> by **{author}** <sub><sup>{license}</sup></sub><br>{description} | <sup>Project:{project_id}</sup><br><sup>File:{file_id}</sup>'''
+    )
+
     if count % 10 == 0 or count == len(lines) - 1:
         logging.debug(f"Saving Data Up To Number: {count}")
         with open(data_path, "w") as file:
@@ -176,6 +199,10 @@ for count, line in enumerate(tqdm(lines, desc="Processing", unit="links")):
 
         with open(aux_img_data_path, "w") as file:
             json.dump(aux_img_data, file, indent=4)
+            
+        with open(export_path, "w") as file:
+            for line in export_data:
+                file.write(line + '\n')
 
 # ------------- #
 
