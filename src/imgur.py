@@ -38,18 +38,22 @@ def main() -> None:
 
     while True:
         start_time = time.time()
-        data: Dict[str, str] = load_or_create_data(data_path, {})
+        data: Dict[str, Dict[str, str]] = load_or_create_data(data_path, {})
         aux_img_data: Dict[str, str] = load_or_create_data(aux_img_data_path, {})
 
         count = 0
         for key, value in aux_img_data.items():
-            imgur_link: str = upload_image(value)
-            data[str(key)]["imgur_link"] = imgur_link
-            with open(data_path, 'w') as f:
-                json.dump(data, f)
-            count += 1
-            if count >= 50:
-                break
+            if data[key]["imgur_link"] == "":
+                print(f"Uploading image {key}...")
+                imgur_link: str = upload_image(value)
+                data.setdefault(key, {})["imgur_link"] = imgur_link
+                count += 1
+
+                if count >= 50:
+                    break
+
+        with open(data_path, 'w') as file:
+            json.dump(data, file,  indent=4)
 
         elapsed_time = time.time() - start_time
         time_to_sleep = max(0, 3600 - elapsed_time)
