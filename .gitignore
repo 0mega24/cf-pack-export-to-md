@@ -5,7 +5,7 @@
 *.html
 *.json
 *.csv
-*.txt
+# *.txt
 *.zip
 
 # VS Code files for those working on multiple tools
