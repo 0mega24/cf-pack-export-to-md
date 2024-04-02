@@ -51,12 +51,17 @@ def main() -> None:
                 if count >= 50:
                     break
 
+        if count == 0 or count < 50:
+            break
+
         with open(data_path, 'w') as file:
             json.dump(data, file,  indent=4)
 
         elapsed_time  = time.time() - start_time
-        time_to_sleep = max(0, 3600 - elapsed_time)
-        time.sleep(time_to_sleep)
+        print(f"Elapsed time: {elapsed_time:.2f} seconds")
+        time.sleep(3600)
+
+    print("Done")
 
 if __name__ == "__main__":
     main()

@@ -201,7 +201,7 @@ for count, line in enumerate(tqdm(lines, desc="Processing", unit="Projects")):
         with open(aux_img_data_path, "w") as file:
             json.dump(aux_img_data, file, indent=4)
             
-        with open(export_path, "w") as file:
+        with open(export_path, "w", encoding="utf-8") as file:
             for line in export_data:
                 file.write(line + '\n')
 
