@@ -21,13 +21,13 @@ import time
 import logging
 import zipfile
 import argparse
-from tqdm import tqdm
-from tkinter import filedialog
-from typing import List, Tuple, Dict
+from   tqdm    import tqdm
+from   tkinter import filedialog
+from   typing  import List, Tuple, Dict
 
-from imgur import is_valid_image_url
+from imgur  import is_valid_image_url
 from fileio import load_or_create_data
-from webdriver_actions import build_driver, get_details
+from webdriver_actions        import build_driver, get_details
 from zip_archive_verification import has_cf_export_structure
 
 # ------------- #
