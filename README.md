@@ -28,7 +28,7 @@ python app.py [--log <log_level>]
 
 - Use the --log argument to specify the logging level if needed. Available options are DEBUG, INFO, WARNING, ERROR, and CRITICAL with a default of WARNING.
 
-## Frameworks Used
+## Libraries Used
 
 - [tkinter](https://docs.python.org/3/library/dialog.html) - For the filedialog
 - [selenium](https://www.selenium.dev/) - For the webscraping of curseforge links

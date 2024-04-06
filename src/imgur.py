@@ -51,11 +51,11 @@ def main() -> None:
                 if count >= 50:
                     break
 
-        if count == 0 or count < 50:
-            break
-
         with open(data_path, 'w') as file:
             json.dump(data, file,  indent=4)
+
+        if count == 0 or count < 50:
+            break
 
         elapsed_time  = time.time() - start_time
         print(f"Elapsed time: {elapsed_time:.2f} seconds")
